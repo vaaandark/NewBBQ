@@ -1,0 +1,17 @@
+# 接入 Bot 的群聊和私聊
+[allowed]
+group = [ 11, 22, 33 ]
+private = [ 44, 55, 66 ]
+
+# 对应 go-cqhttp 配置中的 servers.http.post.url
+[bind]
+address = "127.0.0.1"
+port = 8888
+
+# 对应 go-cqhttp 配置中的 servers.http.address
+[cqhttp_api]
+endpoint = "http://127.0.0.1:8889"
+
+# 将 cookie 文件放入目标目录下
+[cookies]
+cookies_dir = "cookies.d"
