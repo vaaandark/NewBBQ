@@ -16,6 +16,6 @@ endpoint = "http://127.0.0.1:8889"
 [cookies]
 cookies_dir = "cookies.d"
 
-# OpenAI API Key
+# OpenAI API Keys
 [chat_gpt]
-key = "sk-xxx"
+key = [ "sk-xxx", "sk-yyy" ]

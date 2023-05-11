@@ -1,5 +1,6 @@
 import requests
 import asyncio
+import random
 import tomli
 import sys
 import openai
@@ -103,7 +104,7 @@ async def ask(bid, msg):
     if bid in bots:
       bots[bid].append({"role": "user", "content": msg})
     else:
-      openai.api_key = api_key
+      openai.api_key = random.choice(api_key)
       models = openai.Model.list()
       print(models)
       bot = [{"role": "user", "content": msg}]
