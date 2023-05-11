@@ -1,11 +1,8 @@
 import requests
 import asyncio
-import os
-import random
 import tomli
 import sys
-
-from EdgeGPT import Chatbot, ConversationStyle
+import openai
 
 # 读入配置
 config_file = "config.toml"
@@ -20,7 +17,7 @@ allowed_private = config["allowed"]["private"]
 address = config["bind"]["address"]
 port = config["bind"]["port"]
 endpoint = config["cqhttp_api"]["endpoint"]
-cookies_dir = config["cookies"]["cookies_dir"]
+api_key = config["chat_gpt"]["key"]
 
 print("----------READ FROM CONFIG FILE----------")
 print("ALLOWED_GROUP:", allowed_group)
@@ -28,7 +25,7 @@ print("ALLOWED_PRIVATE:", allowed_private)
 print("ADDRESS:", address)
 print("PORT:", port)
 print("ENDPOINT:", endpoint)
-print("COOKIES_DIR:", cookies_dir)
+print("API_KEY", api_key)
 print("-----------------------------------------")
 
 """替换掉消息内容中的特殊字符
@@ -97,43 +94,27 @@ Returns:
   str: New Bing 的回答
 """
 async def ask(bid, msg):
-  # 为了提升最大提问次数，在 `cookies.d` 目录下应放有很多 cookie 文件
-  # 每次随机在 cookie 池中寻找一个帐号
-  global cookies_dir
-  filename = random.choice(os.listdir(cookies_dir))
-  cookie = os.path.join(cookies_dir, filename)
-
   global bots
+  global api_key
   bot = None
   answer = None
-  answer_body = None
 
   try:
     if bid in bots:
-      bot = bots[bid]
+      bots[bid].append({"role": "user", "content": msg})
     else:
-      try:
-        bot = await Chatbot.create(cookie_path=cookie)
-        print("Create a bot for", bid)
-        bots[bid] = bot
-      except Exception as e:
-        answer = str(e) + ": 创建聊天失败"
-    answer_body = await bot.ask(prompt=msg, conversation_style=ConversationStyle.creative, wss_link="wss://sydney.bing.com/sydney/ChatHub")
+      openai.api_key = api_key
+      models = openai.Model.list()
+      print(models)
+      bot = [{"role": "user", "content": msg}]
+      bots[bid] = bot
+    chat_completion = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=bots[bid])
+    answer = chat_completion.choices[0].message.content
+    bots[bid].append({"role": "assistant", "content": answer})
 
   except Exception as e:
-    answer = str(e) + ": 向 New Bing 提问失败。Bot 好像似了，但是又没似，你可以重试一下"
-    print("Fail when asking: The cookie under using is", cookie)
+    answer = str(e) + ": 向 ChatGPT 提问失败，可能是这个对话到达了 Token 上限。Bot 好像似了，但是又没似，你可以重试一下"
     if bid in bots:
-      await bots[bid].close()
-      bots.pop(bid)
-
-  try:
-    answer = answer_body["item"]["messages"][1]["adaptiveCards"][0]["body"][0]["text"].strip()
-  except Exception as e:
-    answer = "{}: 从 answer_body 中获取 message_text 失败。Bot 好像似了，可能是到达了对话上限，也可能是 New Bing 结束了上段对话，你可以重试一下\n".format(e, filename)
-    print("Fail when parsing: The cookie under using is", cookie)
-    if bid in bots:
-      await bots[bid].close()
       bots.pop(bid)
 
   return answer
@@ -169,8 +150,8 @@ async def chat_ingroup(gid, uid, msg, msg_id):
   global bots
   global locks
 
-  # 以 "z " 开头的消息才被识别为与 Bot 聊天
-  if msg[:2] != "z ":
+  # 以 "g " 开头的消息才被识别为与 Bot 聊天
+  if msg[:2] != "g ":
     return
   msg = msg[2:]
 

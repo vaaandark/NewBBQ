@@ -1,6 +1,6 @@
 from aiohttp import web
 import asyncio
-import api
+import nb_api as api
 
 msg_fifo = []
 lock = asyncio.Lock()

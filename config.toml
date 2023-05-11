@@ -15,3 +15,7 @@ endpoint = "http://127.0.0.1:8889"
 # 将 cookie 文件放入目标目录下
 [cookies]
 cookies_dir = "cookies.d"
+
+# OpenAI API Key
+[chat_gpt]
+key = "sk-xxx"
